@@ -1,0 +1,8 @@
+{
+  "name": "povitria-push-check",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}
