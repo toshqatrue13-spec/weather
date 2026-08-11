@@ -11,6 +11,9 @@ const path = require("path");
 const PUBLIC_KEY = (process.env.VAPID_PUBLIC_KEY || "").trim();
 const PRIVATE_KEY = (process.env.VAPID_PRIVATE_KEY || "").trim();
  
+console.log(`VAPID_PUBLIC_KEY length: ${PUBLIC_KEY.length} (expected 87)`);
+console.log(`VAPID_PRIVATE_KEY length: ${PRIVATE_KEY.length} (expected 43)`);
+ 
 if (!PUBLIC_KEY || !PRIVATE_KEY) {
   console.error("Missing VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY secrets. Add them in Settings → Secrets and variables → Actions.");
   process.exit(1);
@@ -127,6 +130,22 @@ async function checkCity(city) {
 }
  
 (async () => {
+  if (process.env.TEST_NOTIFY === "true") {
+    console.log("TEST_NOTIFY=true — sending a guaranteed test push, skipping weather checks.");
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify({
+        title: "Тестове сповіщення 🎉",
+        body: "Якщо ти це бачиш — фонові push-сповіщення працюють!",
+        tag: "test",
+      }));
+      console.log("Test push sent successfully.");
+    } catch (err) {
+      console.error("Test push FAILED:", err.statusCode, err.body || err.message);
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+ 
   for (const city of cities) {
     try {
       await checkCity(city);
