@@ -1,5 +1,5 @@
 const CACHE = "povitria-v1";
-const CORE_ASSETS = ["./povitria.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CORE_ASSETS = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

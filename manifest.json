@@ -2,7 +2,7 @@
   "name": "Повітря — погода, пилок та якість повітря",
   "short_name": "Повітря",
   "description": "Погода, пилок алергенів (амброзія, береза, трава, полин) та якість повітря по містах України",
-  "start_url": "./povitria.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
