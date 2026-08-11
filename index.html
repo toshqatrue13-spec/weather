@@ -263,6 +263,43 @@
   .ctrl-btn.danger:hover{background:rgba(240,71,95,0.1); border-color:rgba(240,71,95,0.5);}
   .ctrl-btn[hidden]{display:none;}
 
+  .push-setup{
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:var(--radius-md);
+    padding:16px 18px;
+    margin:-8px 0 20px;
+    font-size:13.5px;
+    line-height:1.65;
+    color:var(--ink-soft);
+  }
+  .push-setup h4{margin:0 0 8px; font-family:'Space Grotesk',sans-serif; font-size:15px; color:var(--ink);}
+  .push-setup textarea{
+    width:100%;
+    min-height:90px;
+    background:rgba(0,0,0,0.2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:10px;
+    margin:8px 0;
+    resize:vertical;
+  }
+  .push-setup .btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .push-setup button{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    padding:7px 12px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--panel-solid);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .push-setup button:hover{border-color:var(--teal);}
+
   /* Hero */
   .hero{
     position:relative;
@@ -608,8 +645,11 @@
 
   <div class="control-row">
     <button class="ctrl-btn" id="notifyBtn" onclick="toggleNotifications()">🔔 Сповіщення: вимкнено</button>
+    <button class="ctrl-btn" id="pushBtn" onclick="setupPush()">📡 Push (навіть коли закрито)</button>
     <button class="ctrl-btn danger" id="clearBtn" onclick="clearSelection()" hidden>✕ Очистити місто</button>
   </div>
+
+  <div id="pushSetup" class="push-setup" hidden></div>
 
   <div id="content"></div>
 
@@ -1033,6 +1073,75 @@ function markNotified(city, tag){
 }
 function notify(title, body){
   try{ new Notification(title, {body, icon: "icon-192.png"}); }catch(e){ /* ignore if blocked */ }
+}
+
+// ---------- Real push subscription (survives the app being closed) ----------
+const VAPID_PUBLIC_KEY = "BJJiXe9zG-qwCDLmFQtDmihmSbxnV3_n9GPvEz5pZ4D8NUx_9_o5okfdK7NtQRRcLoBUFof-6rdkO-w-GUfZm2U";
+
+function urlBase64ToUint8Array(base64String){
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+function downloadJSON(obj, filename){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function setupPush(){
+  const panel = document.getElementById('pushSetup');
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+    alert("Цей браузер не підтримує push-сповіщення (iOS Safari підтримує їх лише для сайтів, доданих на головний екран — спробуй спершу встановити застосунок).");
+    return;
+  }
+  if(window.isSecureContext === false){
+    alert("Push працює лише на https:// (або localhost). Заливай сайт на реальний хостинг.");
+    return;
+  }
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm !== "granted"){
+      alert("Без дозволу на сповіщення push не працюватиме.");
+      return;
+    }
+    const reg = await navigator.serviceWorker.register("sw.js");
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const subJSON = sub.toJSON();
+    const favs = loadFavorites();
+    const cities = favs.length ? favs : (activeCity ? [activeCity] : []);
+
+    panel.hidden = false;
+    panel.innerHTML = `
+      <h4>Підписку створено ✅ — залишився один крок</h4>
+      <p>Щоб фонова перевірка на GitHub Actions знала, куди слати сповіщення, додай ці 2 файли в корінь свого репозиторію (заміни старі, якщо вже є) і закоміть.</p>
+      <div><b>1) subscription.json</b></div>
+      <textarea readonly>${JSON.stringify(subJSON, null, 2)}</textarea>
+      <div><b>2) cities.json</b> (міста для перевірки — зараз це твої обрані${favs.length?'':' / поточне місто'})</div>
+      <textarea readonly>${JSON.stringify(cities, null, 2)}</textarea>
+      <div class="btn-row">
+        <button onclick='downloadJSON(${JSON.stringify(subJSON)}, "subscription.json")'>⬇ Завантажити subscription.json</button>
+        <button onclick='downloadJSON(${JSON.stringify(cities)}, "cities.json")'>⬇ Завантажити cities.json</button>
+        <button onclick="document.getElementById('pushSetup').hidden=true">Сховати</button>
+      </div>
+      <p style="margin-top:10px;">Далі: створи <code>.github/workflows/check-and-notify.yml</code> і <code>scripts/check-and-notify.js</code> у репо (код дав окремо в чаті), додай секрети VAPID у Settings → Secrets → Actions — і фонова перевірка запрацює за розкладом.</p>
+    `;
+  }catch(err){
+    console.error("Push subscribe error:", err);
+    alert("Не вдалося створити push-підписку: " + (err.message || err));
+  }
 }
 
 function checkAndNotify(city, weather, air){
