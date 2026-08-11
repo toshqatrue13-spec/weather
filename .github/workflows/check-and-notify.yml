@@ -1,36 +1,42 @@
 name: Check weather & send push notifications
-
+ 
 on:
   schedule:
     # Runs at 05:00 and 15:00 UTC ≈ 07:00/08:00 and 17:00/18:00 Kyiv time
     # (Ukraine is UTC+2 in winter, UTC+3 in summer — adjust the hours below if you want a different local time)
     - cron: "0 5,15 * * *"
-  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab to test
-
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Send a guaranteed test push instead of checking real weather"
+        type: boolean
+        default: false
+ 
 permissions:
   contents: write   # needed so the workflow can commit the updated state.json (dedupe memory)
-
+ 
 jobs:
   check-and-notify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+ 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
+ 
       - name: Install dependencies
         working-directory: scripts
         run: npm install web-push
-
+ 
       - name: Run check
         working-directory: scripts
         env:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          TEST_NOTIFY: ${{ github.event.inputs.test }}
         run: node check-and-notify.js
-
+ 
       - name: Commit updated notification state (if changed)
         run: |
           git config user.name "povitria-bot"
