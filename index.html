@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Повітря · Погода, пилок і якість повітря в Україні</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0A0E13">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Повітря">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E13;
+    --bg2:#0F151C;
+    --panel:rgba(255,255,255,0.045);
+    --panel-solid:#141B23;
+    --border:rgba(255,255,255,0.09);
+    --border-soft:rgba(255,255,255,0.05);
+    --ink:#ECEFF3;
+    --ink-soft:#8C9AAA;
+    --ink-faint:#5C6A7A;
+    --amber:#F2A93B;
+    --amber-soft:rgba(242,169,59,0.14);
+    --teal:#39C6BE;
+    --teal-soft:rgba(57,198,190,0.14);
+    --good:#54C97F;
+    --moderate:#F0C232;
+    --high:#F98A4B;
+    --veryhigh:#F0475F;
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:10px;
+  }
+  [data-theme="light"]{
+    --bg:#F4F6F5;
+    --bg2:#EDEFEC;
+    --panel:rgba(10,20,25,0.04);
+    --panel-solid:#FFFFFF;
+    --border:rgba(10,20,25,0.10);
+    --border-soft:rgba(10,20,25,0.06);
+    --ink:#131A20;
+    --ink-soft:#4E5D68;
+    --ink-faint:#84939E;
+    --amber-soft:rgba(242,169,59,0.16);
+    --teal-soft:rgba(57,198,190,0.16);
+  }
+  [data-theme="light"] body{
+    background:
+      radial-gradient(1200px 600px at 12% -10%, rgba(57,198,190,0.14), transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, rgba(242,169,59,0.12), transparent 55%),
+      var(--bg);
+  }
+  [data-theme="light"] .hero-temp{
+    background:linear-gradient(135deg,#0A2A2A,var(--teal) 130%);
+    -webkit-background-clip:text; background-clip:text;
+  }
+  [data-theme="light"] .chip.active{color:#04211f;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  html{overflow-x:hidden;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 12% -10%, rgba(57,198,190,0.16), transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, rgba(242,169,59,0.12), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:24px 16px 70px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+  ::selection{background:var(--amber-soft);}
+
+  /* Topbar */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:22px;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:19px;
+  }
+  .brand-dot{
+    width:9px;height:9px;border-radius:50%;
+    background:linear-gradient(135deg,var(--teal),var(--amber));
+    box-shadow:0 0 12px rgba(57,198,190,0.6);
+  }
+  .brand small{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:400;
+    font-size:11px;
+    color:var(--ink-faint);
+    margin-left:6px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+  .theme-toggle{
+    width:38px; height:38px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .theme-toggle:hover{border-color:var(--teal); color:var(--teal);}
+
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(30px,5.4vw,44px);
+    line-height:1.06;
+    letter-spacing:-0.015em;
+    margin:6px 0 8px;
+  }
+  .sub{
+    color:var(--ink-soft);
+    font-size:15px;
+    max-width:60ch;
+    margin:0 0 24px;
+  }
+
+  /* Search */
+  .search-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:12px 16px;
+    margin-bottom:12px;
+    backdrop-filter:blur(20px);
+  }
+  .search-row svg{flex:none; color:var(--ink-faint);}
+  .search-row input{
+    border:none;background:none;outline:none;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    width:100%;
+  }
+  .search-row input::placeholder{color:var(--ink-faint);}
+  .geo-btn{
+    flex:none;
+    width:30px; height:30px;
+    border-radius:50%;
+    border:none;
+    background:var(--teal-soft);
+    color:var(--teal);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .geo-btn:hover{transform:scale(1.08);}
+  .geo-btn:disabled{opacity:0.5; cursor:default;}
+
+  .fav-star{
+    flex:none;
+    width:36px; height:36px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--ink-faint);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:all .15s ease;
+    font-size:16px;
+  }
+  .fav-star.on{
+    color:var(--amber);
+    border-color:rgba(242,169,59,0.5);
+    background:var(--amber-soft);
+  }
+
+  .chip-scroller{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:28px;
+  }
+  .chip{
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    padding:9px 15px;
+    border-radius:100px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .chip:hover{border-color:var(--teal); color:var(--teal); background:var(--teal-soft);}
+  .chip.active{
+    background:linear-gradient(135deg,var(--teal),#2a9d97);
+    border-color:transparent;
+    color:#04211f;
+    font-weight:600;
+  }
+  .chip-empty, .chip-label{
+    font-size:12.5px;color:var(--ink-faint);
+    padding:8px 4px;
+  }
+  .chip-label{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    font-size:10.5px;
+  }
+
+  /* Control row: notifications + clear */
+  .control-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:-6px 0 20px;
+  }
+  .ctrl-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    padding:8px 14px;
+    border-radius:100px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .ctrl-btn:hover{border-color:var(--border);}
+  .ctrl-btn.on{
+    border-color:rgba(84,201,127,0.5);
+    background:rgba(84,201,127,0.12);
+    color:var(--good);
+  }
+  .ctrl-btn.danger{
+    border-color:rgba(240,71,95,0.35);
+    color:#F0A0AD;
+  }
+  .ctrl-btn.danger:hover{background:rgba(240,71,95,0.1); border-color:rgba(240,71,95,0.5);}
+  .ctrl-btn[hidden]{display:none;}
+
+  .push-setup{
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:var(--radius-md);
+    padding:16px 18px;
+    margin:-8px 0 20px;
+    font-size:13.5px;
+    line-height:1.65;
+    color:var(--ink-soft);
+  }
+  .push-setup h4{margin:0 0 8px; font-family:'Space Grotesk',sans-serif; font-size:15px; color:var(--ink);}
+  .push-setup textarea{
+    width:100%;
+    min-height:90px;
+    background:rgba(0,0,0,0.2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:10px;
+    margin:8px 0;
+    resize:vertical;
+  }
+  .push-setup .btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .push-setup button{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    padding:7px 12px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--panel-solid);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .push-setup button:hover{border-color:var(--teal);}
+
+  /* Hero */
+  .hero{
+    position:relative;
+    background:linear-gradient(160deg, rgba(57,198,190,0.10), rgba(255,255,255,0.03) 55%);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:30px 30px 26px;
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .hero-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+  .hero-loc{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:20px;}
+  .hero-loc small{display:block; font-family:'Inter',sans-serif; font-weight:400; font-size:13px; color:var(--ink-soft); margin-top:2px;}
+  .hero-time{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    text-align:right;
+  }
+  .hero-main{
+    display:flex;
+    align-items:center;
+    gap:22px;
+    margin:18px 0 22px;
+    flex-wrap:wrap;
+  }
+  .hero-icon{width:76px; height:76px; flex:none;}
+  .hero-temp{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(56px,10vw,80px);
+    font-weight:700;
+    line-height:1;
+    background:linear-gradient(135deg,#fff,var(--teal) 120%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .hero-cond{font-size:16px; color:var(--ink-soft); margin-top:4px;}
+  .hero-stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:10px;
+  }
+  .hstat{
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--border-soft);
+    border-radius:12px;
+    padding:11px 13px;
+  }
+  .hstat .k{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.05em; font-family:'IBM Plex Mono',monospace;}
+  .hstat .v{font-family:'IBM Plex Mono',monospace; font-size:16.5px; margin-top:3px;}
+
+  /* Hourly */
+  .hourly-scroll{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding:4px 2px 14px;
+    margin:0 -2px 8px;
+  }
+  .hourly-scroll::-webkit-scrollbar{height:6px;}
+  .hourly-scroll::-webkit-scrollbar-thumb{background:var(--border); border-radius:3px;}
+  .hcard{
+    flex:none;
+    width:74px;
+    text-align:center;
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:14px;
+    padding:12px 6px;
+  }
+  .hcard .t{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-faint);}
+  .hcard .ic{width:26px; height:26px; margin:6px auto 2px;}
+  .hcard .cond{font-size:9.5px; color:var(--ink-soft); line-height:1.25; min-height:22px; display:flex; align-items:center; justify-content:center;}
+  .hcard .v{font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:500; margin-top:4px;}
+  .hcard .p{font-size:10px; color:var(--teal); margin-top:3px; font-family:'IBM Plex Mono',monospace;}
+
+  /* Daily */
+  .daily-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+    gap:8px;
+    margin-bottom:34px;
+  }
+  .dcard{
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:14px;
+    padding:14px 8px;
+    text-align:center;
+  }
+  .dcard .d{font-size:12px; font-weight:600; font-family:'Inter',sans-serif;}
+  .dcard .dt{font-size:10px; color:var(--ink-faint); font-family:'IBM Plex Mono',monospace;}
+  .dcard .ic{width:28px; height:28px; margin:8px auto 3px;}
+  .dcard .cond{font-size:10.5px; color:var(--ink-soft); line-height:1.3; min-height:26px; display:flex; align-items:center; justify-content:center;}
+  .dcard .t{font-family:'IBM Plex Mono',monospace; font-size:13.5px; margin-top:4px;}
+  .dcard .t .lo{color:var(--ink-faint);}
+  .dcard .pr{font-size:10.5px; color:var(--teal); margin-top:4px; font-family:'IBM Plex Mono',monospace;}
+
+  /* Section header */
+  .section-head{margin:8px 0 6px;}
+  .section-head h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:23px;
+    font-weight:600;
+    margin:0 0 6px;
+  }
+  .section-head p{
+    color:var(--ink-soft);
+    font-size:14px;
+    line-height:1.55;
+    max-width:70ch;
+    margin:0 0 18px;
+  }
+
+  /* Pollen / pollutant cards */
+  .info-cluster{display:flex; flex-direction:column; gap:12px; margin-bottom:34px;}
+  .info-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:19px 20px;
+  }
+  .info-card.featured{
+    border-color:rgba(242,169,59,0.4);
+    background:linear-gradient(160deg, var(--amber-soft), var(--panel) 65%);
+  }
+  .info-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:11px;
+  }
+  .info-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16.5px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .info-name .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    background:var(--amber);
+    color:#241503;
+    border-radius:5px;
+    padding:3px 7px;
+    font-weight:600;
+  }
+  .info-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    text-align:right;
+  }
+  .info-value .lvl{font-weight:700;}
+  .gauge-track{
+    position:relative;
+    height:7px;
+    border-radius:6px;
+    background:linear-gradient(90deg,
+      var(--good) 0%, var(--good) 20%,
+      var(--moderate) 20%, var(--moderate) 45%,
+      var(--high) 45%, var(--high) 70%,
+      var(--veryhigh) 70%, var(--veryhigh) 100%);
+    opacity:0.9;
+    margin-bottom:6px;
+  }
+  .gauge-marker{
+    position:absolute; top:-4.5px;
+    width:3px; height:16px;
+    background:#fff;
+    border-radius:2px;
+    box-shadow:0 0 6px rgba(0,0,0,0.5);
+    transform:translateX(-50%);
+  }
+  .gauge-scale{
+    display:flex; justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px; color:var(--ink-faint);
+    text-transform:uppercase; letter-spacing:0.03em;
+    margin-bottom:13px;
+  }
+  .info-desc{font-size:13.5px; line-height:1.6; color:var(--ink-soft); margin-bottom:10px;}
+  .info-desc b{color:var(--ink); font-weight:600;}
+  .info-photo{
+    width:100%;
+    max-height:170px;
+    object-fit:contain;
+    background:rgba(255,255,255,0.03);
+    border-radius:12px;
+    margin-bottom:12px;
+    border:1px solid var(--border-soft);
+  }
+  .info-meta{
+    display:flex; gap:16px; flex-wrap:wrap;
+    font-size:12px; color:var(--ink-faint);
+    font-family:'IBM Plex Mono',monospace;
+    border-top:1px solid var(--border-soft);
+    padding-top:10px;
+  }
+  .info-meta span b{color:var(--ink-soft); font-weight:500;}
+
+  .state-msg{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:40px 4px;
+    text-align:center;
+    line-height:1.7;
+  }
+
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  #content > *{animation:fadeUp .45s ease both;}
+  #content > *:nth-child(1){animation-delay:.02s;}
+  #content > *:nth-child(2){animation-delay:.06s;}
+  #content > *:nth-child(3){animation-delay:.10s;}
+  #content > *:nth-child(4){animation-delay:.14s;}
+  #content > *:nth-child(5){animation-delay:.18s;}
+  #content > *:nth-child(6){animation-delay:.22s;}
+  #content > *:nth-child(n+7){animation-delay:.26s;}
+
+  .offline-banner{
+    border:1px solid rgba(240,194,50,0.4);
+    background:rgba(240,194,50,0.1);
+    color:#F0C232;
+    border-radius:12px;
+    padding:11px 15px;
+    font-size:13px;
+    margin-bottom:16px;
+  }
+
+  .trend{margin-top:2px; margin-bottom:12px;}
+  .trend-label{font-size:10.5px; color:var(--ink-faint); font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;}
+  .trend svg{width:100%; height:38px; display:block;}
+
+  /* Advice box */
+  .advice{
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:var(--radius-md);
+    padding:19px 20px;
+    margin-bottom:34px;
+  }
+  .advice h3{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16px;
+    margin:0 0 10px;
+  }
+  .advice ul{margin:0; padding-left:18px; color:var(--ink-soft); font-size:13.5px; line-height:1.8;}
+  .advice li::marker{color:var(--teal);}
+
+  footer{
+    margin-top:20px;
+    padding-top:16px;
+    border-top:1px solid var(--border-soft);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  footer a{color:var(--teal); text-decoration:none;}
+
+  @media (max-width:640px){
+    body{padding:16px 12px 50px;}
+    .topbar{margin-bottom:16px;}
+    .sub{font-size:13.5px; margin-bottom:18px;}
+    h1{font-size:clamp(26px,7vw,32px);}
+
+    .search-row{padding:10px 13px; margin-bottom:10px;}
+    .search-row input{font-size:16px;} /* 16px avoids iOS auto-zoom on focus */
+    .chip-scroller{gap:6px; margin-bottom:22px;}
+    .chip{padding:8px 12px; font-size:12.5px;}
+
+    .hero{padding:20px 16px; border-radius:18px;}
+    .hero-top{gap:10px;}
+    .hero-loc{font-size:17px;}
+    .hero-time{font-size:10.5px; text-align:left;}
+    .hero-main{gap:14px; margin:14px 0 18px;}
+    .hero-icon{width:56px; height:56px;}
+    .hero-temp{font-size:52px;}
+    .hero-cond{font-size:13.5px;}
+    .hero-stats{grid-template-columns:repeat(2,1fr); gap:8px;}
+    .hstat{padding:10px 11px;}
+    .hstat .v{font-size:14.5px;}
+
+    .section-head h2{font-size:19px;}
+    .section-head p{font-size:13px;}
+
+    .hourly-scroll{gap:8px;}
+    .hcard{width:64px; padding:10px 5px;}
+
+    .daily-grid{grid-template-columns:repeat(3,1fr); gap:7px;}
+    .dcard{padding:11px 5px;}
+
+    .info-card{padding:16px 15px; border-radius:14px;}
+    .info-name{font-size:15px;}
+    .info-value{font-size:12.5px; text-align:left; width:100%;}
+    .info-top{flex-direction:column; gap:6px;}
+    .info-desc{font-size:13px;}
+    .info-meta{flex-direction:column; gap:6px;}
+    .info-photo{max-height:130px;}
+
+    .advice{padding:16px 15px;}
+
+    footer{flex-direction:column; gap:4px;}
+  }
+
+  @media (max-width:380px){
+    .hero-stats{grid-template-columns:1fr 1fr;}
+    .daily-grid{grid-template-columns:repeat(2,1fr);}
+    .hero-temp{font-size:44px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand"><span class="brand-dot"></span>Повітря<small>Weather · Pollen · AQI</small></div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Змінити тему" aria-label="Змінити тему">🌙</button>
+  </div>
+
+  <h1>Погода й алергени у твоєму місті</h1>
+  <p class="sub">Живий пошук будь-якого населеного пункту України, детальна погода та розгорнута інформація про пилок алергенних рослин і шкідливі частки в повітрі.</p>
+
+  <div class="search-row">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="citySearch" type="text" placeholder="Знайти місто…" autocomplete="off">
+    <button class="geo-btn" id="geoBtn" onclick="useMyLocation()" title="Моє місцезнаходження" aria-label="Моє місцезнаходження">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    </button>
+  </div>
+  <div class="chip-scroller" id="chipRow"></div>
+
+  <div class="control-row">
+    <button class="ctrl-btn" id="notifyBtn" onclick="toggleNotifications()">🔔 Сповіщення: вимкнено</button>
+    <button class="ctrl-btn" id="pushBtn" onclick="setupPush()">📡 Push (навіть коли закрито)</button>
+    <button class="ctrl-btn danger" id="clearBtn" onclick="clearSelection()" hidden>✕ Очистити місто</button>
+  </div>
+
+  <div id="pushSetup" class="push-setup" hidden></div>
+
+  <div id="content"></div>
+
+  <footer>
+    <span>Дані: Open‑Meteo (погода, якість повітря, пилок)</span>
+    <span id="updatedAt"></span>
+  </footer>
+</div>
+
+<script>
+// ---------- Reference data ----------
+const POPULAR_CITIES = [
+  {name:"Київ", admin:"Київська обл.", lat:50.4501, lon:30.5234},
+  {name:"Харків", admin:"Харківська обл.", lat:49.9935, lon:36.2304},
+  {name:"Одеса", admin:"Одеська обл.", lat:46.4825, lon:30.7233},
+  {name:"Дніпро", admin:"Дніпропетровська обл.", lat:48.4647, lon:35.0462},
+  {name:"Львів", admin:"Львівська обл.", lat:49.8397, lon:24.0297},
+  {name:"Запоріжжя", admin:"Запорізька обл.", lat:47.8388, lon:35.1396},
+  {name:"Вінниця", admin:"Вінницька обл.", lat:49.2331, lon:28.4682},
+  {name:"Полтава", admin:"Полтавська обл.", lat:49.5883, lon:34.5514},
+];
+
+const WMO = {
+  0:["Ясно","clear"],1:["Переважно ясно","clear"],2:["Мінлива хмарність","cloud-sun"],3:["Хмарно","cloud"],
+  45:["Туман","fog"],48:["Паморозь","fog"],
+  51:["Легка мряка","drizzle"],53:["Мряка","drizzle"],55:["Сильна мряка","drizzle"],
+  56:["Крижана мряка","drizzle"],57:["Сильна крижана мряка","drizzle"],
+  61:["Невеликий дощ","rain"],63:["Дощ","rain"],65:["Сильний дощ","rain"],
+  66:["Крижаний дощ","rain"],67:["Сильний крижаний дощ","rain"],
+  71:["Невеликий сніг","snow"],73:["Сніг","snow"],75:["Сильний сніг","snow"],77:["Снігова крупа","snow"],
+  80:["Зливи","rain"],81:["Сильні зливи","rain"],82:["Дуже сильні зливи","rain"],
+  85:["Снігові зливи","snow"],86:["Сильні снігові зливи","snow"],
+  95:["Гроза","storm"],96:["Гроза з градом","storm"],99:["Сильна гроза з градом","storm"]
+};
+function wmoInfo(code){ return WMO[code] || ["—","clear"]; }
+const WMO_SHORT = {
+  0:"Ясно",1:"Ясно",2:"Хмарно",3:"Хмарно",
+  45:"Туман",48:"Туман",
+  51:"Мряка",53:"Мряка",55:"Мряка",56:"Мряка",57:"Мряка",
+  61:"Дощ",63:"Дощ",65:"Злива",66:"Дощ",67:"Злива",
+  71:"Сніг",73:"Сніг",75:"Снігопад",77:"Крупа",
+  80:"Зливи",81:"Зливи",82:"Зливи",85:"Сніг",86:"Сніг",
+  95:"Гроза",96:"Гроза",99:"Гроза"
+};
+function wmoShort(code){ return WMO_SHORT[code] || "—"; }
+
+const ICONS = {
+  clear: `<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" fill="#F2A93B"/><g stroke="#F2A93B" stroke-width="3" stroke-linecap="round"><line x1="24" y1="2" x2="24" y2="9"/><line x1="24" y1="39" x2="24" y2="46"/><line x1="2" y1="24" x2="9" y2="24"/><line x1="39" y1="24" x2="46" y2="24"/><line x1="8" y1="8" x2="13" y2="13"/><line x1="35" y1="35" x2="40" y2="40"/><line x1="40" y1="8" x2="35" y2="13"/><line x1="13" y1="35" x2="8" y2="40"/></g></svg>`,
+  "cloud-sun": `<svg viewBox="0 0 48 48" fill="none"><circle cx="17" cy="17" r="7" fill="#F2A93B"/><path d="M12 34a9 9 0 0 1 3-17.4A11 11 0 0 1 36 22a7.5 7.5 0 0 1-1 15H14a2 2 0 0 1-2-3z" fill="#8C9AAA" opacity="0.85"/></svg>`,
+  cloud: `<svg viewBox="0 0 48 48" fill="none"><path d="M14 34a10 10 0 0 1 3-19.6A12 12 0 0 1 39 21a8 8 0 0 1-1 17H16a2 2 0 0 1-2-4z" fill="#93A1AF"/></svg>`,
+  fog: `<svg viewBox="0 0 48 48" fill="none" stroke="#93A1AF" stroke-width="3" stroke-linecap="round"><line x1="8" y1="16" x2="40" y2="16"/><line x1="4" y1="24" x2="44" y2="24"/><line x1="8" y1="32" x2="40" y2="32"/></svg>`,
+  drizzle: `<svg viewBox="0 0 48 48" fill="none"><path d="M14 26a9 9 0 0 1 2-17.8A11 11 0 0 1 37 14a7 7 0 0 1-1 14H16a2 2 0 0 1-2-2z" fill="#93A1AF"/><g stroke="#39C6BE" stroke-width="2.5" stroke-linecap="round"><line x1="16" y1="34" x2="14" y2="40"/><line x1="24" y1="34" x2="22" y2="40"/><line x1="32" y1="34" x2="30" y2="40"/></g></svg>`,
+  rain: `<svg viewBox="0 0 48 48" fill="none"><path d="M14 24a9 9 0 0 1 2-17.8A11 11 0 0 1 37 12a7 7 0 0 1-1 14H16a2 2 0 0 1-2-2z" fill="#93A1AF"/><g stroke="#39C6BE" stroke-width="2.8" stroke-linecap="round"><line x1="14" y1="32" x2="11" y2="42"/><line x1="24" y1="32" x2="21" y2="42"/><line x1="34" y1="32" x2="31" y2="42"/></g></svg>`,
+  snow: `<svg viewBox="0 0 48 48" fill="none"><path d="M14 22a9 9 0 0 1 2-17.8A11 11 0 0 1 37 10a7 7 0 0 1-1 14H16a2 2 0 0 1-2-2z" fill="#93A1AF"/><g stroke="#ECEFF3" stroke-width="2.4" stroke-linecap="round"><line x1="14" y1="32" x2="14" y2="42"/><line x1="10" y1="37" x2="18" y2="37"/><line x1="24" y1="32" x2="24" y2="42"/><line x1="20" y1="37" x2="28" y2="37"/><line x1="34" y1="32" x2="34" y2="42"/><line x1="30" y1="37" x2="38" y2="37"/></g></svg>`,
+  storm: `<svg viewBox="0 0 48 48" fill="none"><path d="M14 22a9 9 0 0 1 2-17.8A11 11 0 0 1 37 10a7 7 0 0 1-1 14H16a2 2 0 0 1-2-2z" fill="#93A1AF"/><path d="M25 30l-6 10h5l-3 8 9-11h-5l4-7z" fill="#F0C232"/></svg>`
+};
+function iconSVG(cat){ return ICONS[cat] || ICONS.clear; }
+
+const WEEKDAYS = ["Нд","Пн","Вт","Ср","Чт","Пт","Сб"];
+const WEEKDAYS_FULL = ["неділя","понеділок","вівторок","середа","четвер","п'ятниця","субота"];
+
+function windDir(deg){
+  const dirs = ["Пн","ПнСх","Сх","ПдСх","Пд","ПдЗх","Зх","ПнЗх"];
+  return dirs[Math.round(deg/45)%8];
+}
+
+// ---------- Theme ----------
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeToggle').textContent = theme === 'light' ? '☀️' : '🌙';
+  try{ localStorage.setItem('povitria:theme', theme); }catch(e){}
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(cur === 'light' ? 'dark' : 'light');
+}
+(function initTheme(){
+  let saved = null;
+  try{ saved = localStorage.getItem('povitria:theme'); }catch(e){}
+  if(!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) saved = 'light';
+  applyTheme(saved === 'light' ? 'light' : 'dark');
+})();
+
+// ---------- Geolocation ----------
+function useMyLocation(){
+  if(!("geolocation" in navigator)){
+    ipLocationFallback();
+    return;
+  }
+  if(window.isSecureContext === false){
+    alert("Точна геолокація працює лише на https:// (або localhost). Спробую визначити місто приблизно за IP-адресою натомість…");
+    ipLocationFallback();
+    return;
+  }
+  const btn = document.getElementById('geoBtn');
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const {latitude: lat, longitude: lon} = pos.coords;
+    let name = "Моє місцезнаходження", admin = "";
+    try{
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=uk`);
+      const data = await res.json();
+      name = data.city || data.locality || data.principalSubdivision || name;
+      admin = data.principalSubdivision || "";
+    }catch(e){ /* fall back to generic name below */ }
+    btn.disabled = false;
+    selectCity({name, admin, lat, lon});
+  }, err => {
+    console.error("Geolocation error:", err.code, err.message);
+    if(err.code === 3){
+      // Timeout — GPS/Wi-Fi based positioning didn't answer in time. Fall back to IP-based location.
+      ipLocationFallback();
+      return;
+    }
+    btn.disabled = false;
+    const reasons = {
+      1: "Доступ заблоковано в налаштуваннях браузера чи ОС. Перевір: значок 🔒 біля адресного рядка → Місцезнаходження → Дозволити, а також дозвіл геолокації для самого браузера в налаштуваннях системи (Windows: Конфіденційність → Розташування; macOS: Системні налаштування → Конфіденційність → Служби геолокації).",
+      2: "Не вдалося визначити точну позицію. Спробую приблизно за IP-адресою…"
+    };
+    if(err.code === 2){
+      ipLocationFallback();
+      return;
+    }
+    alert("Не вдалося визначити місцезнаходження.\n\n" + (reasons[err.code] || err.message || "Невідома помилка."));
+  }, {timeout:15000, enableHighAccuracy:false, maximumAge:60000});
+}
+
+async function ipLocationFallback(){
+  const btn = document.getElementById('geoBtn');
+  btn.disabled = true;
+  try{
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    if(data.latitude && data.longitude){
+      btn.disabled = false;
+      selectCity({
+        name: data.city || "Моє місцезнаходження",
+        admin: data.region || "",
+        lat: data.latitude,
+        lon: data.longitude
+      });
+    }else{
+      throw new Error("no coords in IP lookup response");
+    }
+  }catch(e){
+    btn.disabled = false;
+    alert("Не вдалося визначити місцезнаходження ні точно, ні приблизно за IP. Спробуй ввести місто вручну через пошук.");
+  }
+}
+
+// ---------- Pollen & pollutant reference info ----------
+const POLLEN_TYPES = [
+  {
+    key:"ragweed_pollen", label:"Амброзія", featured:true, thresholds:[1,10,50],
+    season:"кінець липня — жовтень",
+    desc:"Найагресивніший алерген в Україні. Пилок дуже дрібний і легко переноситься вітром на десятки кілометрів, тому навіть незначна концентрація здатна викликати сильну реакцію. Спричиняє нежить, сльозотечу, свербіж очей, а в людей з астмою — напади задухи."
+  },
+  {
+    key:"grass_pollen", label:"Трава (злакові)", featured:false, thresholds:[5,20,50],
+    season:"травень — липень",
+    desc:"Один з найпоширеніших алергенів літа. Цвітіння лугових і культурних злаків триває довго, пік зазвичай припадає на червень. Типові симптоми — закладеність носа, чхання, подразнення очей."
+  },
+  {
+    key:"birch_pollen", label:"Береза", featured:false, thresholds:[10,50,150],
+    season:"квітень — травень",
+    desc:"Головний весняний алерген у більшості регіонів України. Пилок берези часто дає перехресну алергічну реакцію на яблука, горіхи та кісточкові фрукти, тому симптоми можуть посилюватись під час їх вживання в сезон цвітіння.",
+    photo:"birch-photo.jpg"
+  },
+  {
+    key:"mugwort_pollen", label:"Полин", featured:false, thresholds:[1,10,50],
+    season:"липень — вересень",
+    desc:"Поширений бур'ян, який цвіте паралельно з амброзією і посилює загальне алергічне навантаження наприкінці літа. Може викликати перехресну реакцію на деякі спеції та овочі родини селерових."
+  },
+];
+
+const POLLUTANTS = [
+  {
+    key:"pm2_5", label:"PM2.5", unit:"мкг/м³", thresholds:[10,25,50],
+    desc:"Дрібнодисперсний пил розміром до 2.5 мкм — найнебезпечніший вид забруднення. Такі частинки проникають глибоко в легені й навіть у кровотік, подразнюють дихальні шляхи та при тривалому впливі підвищують ризик серцево-судинних і респіраторних захворювань."
+  },
+  {
+    key:"pm10", label:"PM10", unit:"мкг/м³", thresholds:[20,50,100],
+    desc:"Грубодисперсний пил (до 10 мкм) — дорожній пил, будівельні частки, пилок. Здебільшого осідає у верхніх дихальних шляхах, спричиняє кашель, подразнення горла й очей, погіршує стан при астмі та алергії."
+  },
+  {
+    key:"ozone", label:"Озон (O₃)", unit:"мкг/м³", thresholds:[60,100,140],
+    desc:"Приземний озон утворюється під дією сонячного світла з вихлопних газів і промислових викидів. Найвищі концентрації — у спекотні сонячні дні. Подразнює дихальні шляхи, особливо небезпечний під час фізичних навантажень на вулиці."
+  },
+  {
+    key:"nitrogen_dioxide", label:"NO₂", unit:"мкг/м³", thresholds:[40,100,200],
+    desc:"Діоксид азоту — переважно від автомобільного транспорту. Запалює слизові оболонки дихальних шляхів, посилює симптоми астми та підвищує чутливість легень до інших алергенів, особливо у дітей."
+  },
+];
+
+function levelFor(value, thresholds){
+  if(value === null || value === undefined || Number.isNaN(value)) return null;
+  if(value <= 0) return 0;
+  if(value < thresholds[0]) return 1;
+  if(value < thresholds[1]) return 2;
+  if(value < thresholds[2]) return 3;
+  return 4;
+}
+const LEVEL_LABEL = ["Немає","Низький","Помірний","Високий","Дуже високий"];
+const LEVEL_COLOR = ["var(--good)","var(--good)","var(--moderate)","var(--high)","var(--veryhigh)"];
+
+function eaqiLevel(v){
+  if(v===null||v===undefined) return null;
+  if(v<=20) return 0;
+  if(v<=40) return 1;
+  if(v<=60) return 2;
+  if(v<=80) return 3;
+  return 4;
+}
+const EAQI_LABEL = ["Добра","Задовільна","Помірна","Погана","Дуже погана"];
+
+function fmt(value, {round=true, unit=""} = {}){
+  if(value === null || value === undefined || Number.isNaN(value)) return "н/д";
+  const v = round ? Math.round(value) : value;
+  return `${v}${unit}`;
+}
+
+// ---------- State & search ----------
+let activeCity = null;
+let searchToken = 0;
+
+// ---------- Favorites ----------
+const FAV_KEY = "povitria:favorites";
+function loadFavorites(){
+  try{ return JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); }catch(e){ return []; }
+}
+function saveFavorites(list){
+  try{ localStorage.setItem(FAV_KEY, JSON.stringify(list)); }catch(e){}
+}
+function isFavorite(city){
+  return loadFavorites().some(c => c.name === city.name && c.admin === city.admin);
+}
+function toggleFavorite(city){
+  let list = loadFavorites();
+  if(isFavorite(city)){
+    list = list.filter(c => !(c.name === city.name && c.admin === city.admin));
+  }else{
+    list.push({name:city.name, admin:city.admin||"", lat:city.lat, lon:city.lon});
+  }
+  saveFavorites(list);
+  const btn = document.getElementById('favStar');
+  if(btn){
+    const on = isFavorite(city);
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '★' : '☆';
+  }
+}
+
+function chipsFromList(list, labelWhenEmpty){
+  const row = document.getElementById('chipRow');
+  row.innerHTML = "";
+  if(list.length === 0){
+    row.innerHTML = `<div class="chip-empty">${labelWhenEmpty}</div>`;
+    return;
+  }
+  list.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'chip' + (activeCity && activeCity.name === c.name && activeCity.admin === c.admin ? ' active' : '');
+    el.textContent = c.admin ? `${c.name} · ${c.admin}` : c.name;
+    el.onclick = () => {
+      if(activeCity && activeCity.name === c.name && activeCity.admin === c.admin){
+        clearSelection();
+      } else {
+        selectCity(c);
+      }
+    };
+    row.appendChild(el);
+  });
+}
+
+function makeChipEl(c, prefix=""){
+  const el = document.createElement('div');
+  el.className = 'chip' + (activeCity && activeCity.name === c.name && activeCity.admin === c.admin ? ' active' : '');
+  el.textContent = prefix + (c.admin ? `${c.name} · ${c.admin}` : c.name);
+  el.onclick = () => {
+    if(activeCity && activeCity.name === c.name && activeCity.admin === c.admin){ clearSelection(); }
+    else{ selectCity(c); }
+  };
+  return el;
+}
+function makeLabelEl(text){
+  const el = document.createElement('div');
+  el.className = 'chip-label';
+  el.textContent = text;
+  return el;
+}
+
+function renderChips(query=""){
+  const q = query.trim();
+  const row = document.getElementById('chipRow');
+  if(q.length === 0){
+    row.innerHTML = "";
+    const favs = loadFavorites();
+    if(favs.length){
+      row.appendChild(makeLabelEl("★ Обрані"));
+      favs.forEach(c => row.appendChild(makeChipEl(c, "★ ")));
+    }
+    row.appendChild(makeLabelEl("Популярні міста"));
+    POPULAR_CITIES.forEach(c => row.appendChild(makeChipEl(c)));
+    return;
+  }
+  if(q.length < 2){
+    row.innerHTML = '<div class="chip-empty">Введіть принаймні 2 літери…</div>';
+    return;
+  }
+  searchGeocode(q);
+}
+
+let debounceTimer = null;
+document.getElementById('citySearch').addEventListener('input', e => {
+  clearTimeout(debounceTimer);
+  const val = e.target.value;
+  if(val.trim().length < 2){ renderChips(val); return; }
+  document.getElementById('chipRow').innerHTML = '<div class="chip-empty">Пошук…</div>';
+  debounceTimer = setTimeout(() => renderChips(val), 350);
+});
+
+async function searchGeocode(query){
+  const myToken = ++searchToken;
+  try{
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=12&language=uk&format=json&country=UA`);
+    const data = await res.json();
+    if(myToken !== searchToken) return;
+    const results = (data.results || []).map(r => ({
+      name: r.name,
+      admin: [r.admin2, r.admin1].filter(Boolean).join(", ") || r.country,
+      lat: r.latitude,
+      lon: r.longitude
+    }));
+    chipsFromList(results, "Місто не знайдено в Україні");
+  }catch(err){
+    if(myToken !== searchToken) return;
+    document.getElementById('chipRow').innerHTML = '<div class="chip-empty">Не вдалося виконати пошук. Перевірте з’єднання.</div>';
+  }
+}
+
+// ---------- Persistence (works when the page runs as a real site/PWA, outside Claude's preview) ----------
+const STORAGE_KEY = "povitria:lastCity";
+function saveLastCity(city){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(city)); }catch(e){ /* storage unavailable in this context */ }
+}
+function loadLastCity(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function clearLastCity(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+}
+
+function clearSelection(){
+  activeCity = null;
+  clearLastCity();
+  document.getElementById('citySearch').value = "";
+  document.getElementById('clearBtn').hidden = true;
+  document.getElementById('content').innerHTML = '<div class="state-msg">Оберіть місто вище, щоб побачити погоду, рівень пилку й якість повітря.</div>';
+  document.getElementById('updatedAt').textContent = "";
+  renderChips();
+}
+
+// ---------- Notifications ----------
+function toggleNotifications(){
+  if(!("Notification" in window)){
+    alert("Цей браузер не підтримує сповіщення.");
+    return;
+  }
+  if(Notification.permission === "granted"){
+    alert("Сповіщення вже увімкнено. Вимкнути їх можна в налаштуваннях сайту в браузері (значок 🔒/ⓘ біля адресного рядка).");
+    return;
+  }
+  if(Notification.permission === "denied"){
+    alert("Сповіщення заблоковано в налаштуваннях браузера для цього сайту. Браузер більше не показує запит автоматично — дозволь їх вручну: натисни на значок 🔒/ⓘ біля адресного рядка → Сповіщення → Дозволити, і онови сторінку.");
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    updateNotifyBtn(perm);
+    if(perm === "denied"){
+      alert("Сповіщення не дозволено. Якщо це сталося випадково, дозволь їх у налаштуваннях сайту в браузері.");
+    }
+  });
+}
+function updateNotifyBtn(permOverride){
+  const btn = document.getElementById('notifyBtn');
+  if(!("Notification" in window)){
+    btn.textContent = "🔔 Сповіщення недоступні";
+    return;
+  }
+  const perm = permOverride || Notification.permission;
+  if(perm === "granted"){
+    btn.textContent = "🔔 Сповіщення: увімкнено";
+    btn.classList.add("on");
+  }else{
+    btn.textContent = "🔔 Сповіщення: вимкнено";
+    btn.classList.remove("on");
+  }
+}
+
+function todayKey(city){
+  const d = new Date();
+  return `povitria:notified:${city.name}:${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function alreadyNotifiedToday(city, tag){
+  try{
+    const raw = localStorage.getItem(todayKey(city));
+    const list = raw ? JSON.parse(raw) : [];
+    return list.includes(tag);
+  }catch(e){ return false; }
+}
+function markNotified(city, tag){
+  try{
+    const key = todayKey(city);
+    const raw = localStorage.getItem(key);
+    const list = raw ? JSON.parse(raw) : [];
+    if(!list.includes(tag)) list.push(tag);
+    localStorage.setItem(key, JSON.stringify(list));
+  }catch(e){}
+}
+function notify(title, body){
+  try{ new Notification(title, {body, icon: "icon-192.png"}); }catch(e){ /* ignore if blocked */ }
+}
+
+// ---------- Real push subscription (survives the app being closed, works for every visitor) ----------
+const VAPID_PUBLIC_KEY = "BJJiXe9zG-qwCDLmFQtDmihmSbxnV3_n9GPvEz5pZ4D8NUx_9_o5okfdK7NtQRRcLoBUFof-6rdkO-w-GUfZm2U";
+// Set this to your deployed Cloudflare Worker URL, e.g. "https://povitria-push.yourname.workers.dev"
+const PUSH_BACKEND_URL = "https://povitria-push.toshqatrue13.workers.dev";
+
+function urlBase64ToUint8Array(base64String){
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function setupPush(){
+  const panel = document.getElementById('pushSetup');
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+    alert("Цей браузер не підтримує push-сповіщення (iOS Safari підтримує їх лише для сайтів, доданих на головний екран — спробуй спершу встановити застосунок).");
+    return;
+  }
+  if(window.isSecureContext === false){
+    alert("Push працює лише на https:// (або localhost). Заливай сайт на реальний хостинг.");
+    return;
+  }
+  if(!activeCity){
+    alert("Спершу обери місто — сповіщення прив'язані до конкретного міста.");
+    return;
+  }
+  if(PUSH_BACKEND_URL.includes("YOUR-SUBDOMAIN")){
+    alert("Push-бекенд ще не підключено (PUSH_BACKEND_URL у коді). Задеплой Cloudflare Worker і встав його адресу в index.html.");
+    return;
+  }
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm !== "granted"){
+      alert("Без дозволу на сповіщення push не працюватиме.");
+      return;
+    }
+    const reg = await navigator.serviceWorker.register("sw.js");
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    const res = await fetch(`${PUSH_BACKEND_URL}/subscribe`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ subscription: sub.toJSON(), city: activeCity })
+    });
+    if(!res.ok) throw new Error("Backend responded " + res.status);
+
+    panel.hidden = false;
+    panel.innerHTML = `<h4>Готово ✅</h4><p>Тебе підписано на сповіщення для міста <b>${activeCity.name}</b>. Нічого більше робити не треба — push прийде автоматично, коли з'явиться дощ, погане повітря чи висока амброзія.</p>
+    <div class="btn-row"><button onclick="document.getElementById('pushSetup').hidden=true">Ок</button></div>`;
+  }catch(err){
+    console.error("Push subscribe error:", err);
+    alert("Не вдалося створити push-підписку: " + (err.message || err));
+  }
+}
+
+function checkAndNotify(city, weather, air){
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  const cur = weather.current || {};
+  const daily = weather.daily || {};
+  const [, condCat] = wmoInfo(cur.weather_code);
+  const rainNow = condCat === "rain" || condCat === "storm" || condCat === "drizzle";
+  const rainSoon = daily.precipitation_probability_max && daily.precipitation_probability_max[0] >= 70;
+  if((rainNow || rainSoon) && !alreadyNotifiedToday(city, "rain")){
+    notify(`Дощ у ${city.name}`, rainNow ? "Зараз іде дощ — візьми парасольку." : "Сьогодні висока ймовірність дощу.");
+    markNotified(city, "rain");
+  }
+
+  const a = air.current || {};
+  const eLvl = eaqiLevel(a.european_aqi);
+  const worstPollutant = Math.max(0, ...POLLUTANTS.map(p => levelFor(a[p.key], p.thresholds) ?? 0));
+  const ragweedLvl = levelFor(a.ragweed_pollen, POLLEN_TYPES[0].thresholds) ?? 0;
+  if((eLvl !== null && eLvl >= 3) || worstPollutant >= 3){
+    if(!alreadyNotifiedToday(city, "air")){
+      notify(`Забруднене повітря в ${city.name}`, "Якість повітря погана — обмеж перебування на вулиці.");
+      markNotified(city, "air");
+    }
+  }
+  if(ragweedLvl >= 3 && !alreadyNotifiedToday(city, "ragweed")){
+    notify(`Високий рівень амброзії в ${city.name}`, "Концентрація пилку амброзії висока — врахуй, якщо є алергія.");
+    markNotified(city, "ragweed");
+  }
+}
+
+// ---------- Cache (for offline fallback) ----------
+function cacheKey(city){ return `povitria:cache:${city.name}:${city.admin||''}`; }
+function saveCache(city, weather, air){
+  try{ localStorage.setItem(cacheKey(city), JSON.stringify({weather, air, ts: Date.now()})); }catch(e){}
+}
+function loadCache(city){
+  try{
+    const raw = localStorage.getItem(cacheKey(city));
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+// ---------- Fetch & render ----------
+async function selectCity(city){
+  activeCity = city;
+  renderChips(document.getElementById('citySearch').value);
+  const content = document.getElementById('content');
+  content.innerHTML = `<div class="state-msg">Завантаження даних для ${city.name}…</div>`;
+
+  try{
+    const [weatherRes, airRes] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,precipitation&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset,wind_speed_10m_max&timezone=auto&forecast_days=7`),
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=european_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,ragweed_pollen&hourly=ragweed_pollen,european_aqi&forecast_days=3&timezone=auto`)
+    ]);
+    const weather = await weatherRes.json();
+    const air = await airRes.json();
+
+    if(weather.error) throw new Error("Weather API: " + weather.reason);
+    if(!weather.current || typeof weather.current.temperature_2m !== "number"){
+      throw new Error("Дані про погоду для цих координат не отримано (lat=" + city.lat + ", lon=" + city.lon + ")");
+    }
+    if(air.error) throw new Error("Air quality API: " + air.reason);
+
+    renderContent(city, weather, air, false);
+    document.getElementById('updatedAt').textContent = "Оновлено: " + new Date().toLocaleTimeString('uk-UA', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('clearBtn').hidden = false;
+    saveLastCity(city);
+    saveCache(city, weather, air);
+    checkAndNotify(city, weather, air);
+  }catch(err){
+    console.error("Помилка завантаження даних:", err);
+    const cached = loadCache(city);
+    if(cached){
+      renderContent(city, cached.weather, cached.air, true, cached.ts);
+      document.getElementById('clearBtn').hidden = false;
+    }else{
+      content.innerHTML = `<div class="state-msg">Не вдалося завантажити дані для ${city.name}.<br>Причина: ${err.message || 'невідома помилка'}<br>Перевірте з’єднання й спробуйте ще раз.</div>`;
+    }
+  }
+}
+
+function gaugeBlock(hasData, lvl, pct){
+  return `<div class="gauge-track">${hasData ? `<div class="gauge-marker" style="left:${pct}%"></div>` : ''}</div>
+  <div class="gauge-scale"><span>Немає</span><span>Низький</span><span>Помірний</span><span>Високий</span><span>Дуже високий</span></div>`;
+}
+
+function sparklineSVG(values, color){
+  const nums = values.filter(v => v !== null && v !== undefined && !Number.isNaN(v));
+  if(nums.length < 2) return '';
+  const min = Math.min(...values.map(v=>v??0));
+  const max = Math.max(...values.map(v=>v??0), min + 0.001);
+  const w = 300, h = 34, pad = 2;
+  const step = (w - pad*2) / (values.length - 1);
+  const points = values.map((v,i) => {
+    const x = pad + i*step;
+    const y = h - pad - ((v??0) - min) / (max - min) * (h - pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const lastX = pad + (values.length-1)*step;
+  const lastY = h - pad - ((values[values.length-1]??0) - min) / (max - min) * (h - pad*2);
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastX}" cy="${lastY}" r="3" fill="${color}"/>
+  </svg>`;
+}
+
+function renderContent(city, weather, air, isOffline, cachedTs){
+  const content = document.getElementById('content');
+  const cur = weather.current || {};
+  const daily = weather.daily || {};
+  const hourly = weather.hourly || {};
+  const a = air.current || {};
+  const [condText, condCat] = wmoInfo(cur.weather_code);
+  const now = new Date();
+
+  // ---- Hero ----
+  let html = '';
+  if(isOffline){
+    const when = cachedTs ? new Date(cachedTs).toLocaleString('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    html += `<div class="offline-banner">⚠ Немає з'єднання — показані останні збережені дані${when ? ' (' + when + ')' : ''}.</div>`;
+  }
+  html += `
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-loc">${city.name}<small>${city.admin || ''}</small></div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="fav-star${isFavorite(city)?' on':''}" id="favStar" onclick='toggleFavorite(${JSON.stringify(city).replace(/'/g,"&#39;")})' title="Додати в обране">${isFavorite(city)?'★':'☆'}</button>
+        <div class="hero-time">${WEEKDAYS_FULL[now.getDay()]}<br>${now.toLocaleDateString('uk-UA',{day:'numeric',month:'long'})}</div>
+      </div>
+    </div>
+    <div class="hero-main">
+      <div class="hero-icon">${iconSVG(condCat)}</div>
+      <div>
+        <div class="hero-temp">${fmt(cur.temperature_2m)}°</div>
+        <div class="hero-cond">${condText} · відчувається як ${fmt(cur.apparent_temperature,{unit:'°'})}</div>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="k">Вологість</div><div class="v">${fmt(cur.relative_humidity_2m,{unit:'%'})}</div></div>
+      <div class="hstat"><div class="k">Вітер</div><div class="v">${fmt(cur.wind_speed_10m,{unit:' км/год'})} ${cur.wind_direction_10m!=null ? windDir(cur.wind_direction_10m) : ''}</div></div>
+      <div class="hstat"><div class="k">Пориви</div><div class="v">${fmt(cur.wind_gusts_10m,{unit:' км/год'})}</div></div>
+      <div class="hstat"><div class="k">Тиск</div><div class="v">${fmt(cur.surface_pressure,{unit:' гПа'})}</div></div>
+      <div class="hstat"><div class="k">УФ-індекс</div><div class="v">${daily.uv_index_max ? fmt(daily.uv_index_max[0],{round:false}) : 'н/д'}</div></div>
+      <div class="hstat"><div class="k">Схід / Захід</div><div class="v" style="font-size:13px">${daily.sunrise ? daily.sunrise[0].slice(11,16) : '—'} / ${daily.sunset ? daily.sunset[0].slice(11,16) : '—'}</div></div>
+    </div>
+  </div>`;
+
+  // ---- Hourly ----
+  if(hourly.time){
+    const nowHour = now.getHours();
+    const startIdx = hourly.time.findIndex(t => new Date(t).getHours() === nowHour && new Date(t).getDate() === now.getDate());
+    const from = startIdx >= 0 ? startIdx : 0;
+    html += `<div class="section-head"><h2>Погодинно</h2></div><div class="hourly-scroll">`;
+    for(let i=from; i<Math.min(from+24, hourly.time.length); i++){
+      const t = new Date(hourly.time[i]);
+      const [, cat] = wmoInfo(hourly.weather_code[i]);
+      html += `<div class="hcard">
+        <div class="t">${i===from ? 'Зараз' : t.getHours()+':00'}</div>
+        <div class="ic">${iconSVG(cat)}</div>
+        <div class="cond">${wmoShort(hourly.weather_code[i])}</div>
+        <div class="v">${fmt(hourly.temperature_2m[i])}°</div>
+        <div class="p">${hourly.precipitation_probability ? fmt(hourly.precipitation_probability[i],{unit:'%'}) : ''}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // ---- Daily ----
+  html += `<div class="section-head"><h2>7 днів</h2></div><div class="daily-grid">`;
+  for(let i=0; i<Math.min(7, (daily.time||[]).length); i++){
+    const d = new Date(daily.time[i]);
+    const [, cat] = wmoInfo(daily.weather_code[i]);
+    html += `<div class="dcard">
+      <div class="d">${i===0 ? 'Сьогодні' : WEEKDAYS[d.getDay()]}</div>
+      <div class="dt">${d.toLocaleDateString('uk-UA',{day:'numeric',month:'short'})}</div>
+      <div class="ic">${iconSVG(cat)}</div>
+      <div class="cond">${wmoShort(daily.weather_code[i])}</div>
+      <div class="t">${fmt(daily.temperature_2m_max[i])}° <span class="lo">${fmt(daily.temperature_2m_min[i])}°</span></div>
+      <div class="pr">${daily.precipitation_probability_max ? '☔ ' + fmt(daily.precipitation_probability_max[i],{unit:'%'}) : ''}</div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // ---- Pollen ----
+  html += `<div class="section-head">
+    <h2>Пилок і алергени</h2>
+    <p>Концентрація пилку в повітрі — головний чинник сезонної алергії (полінозу). Значення наведені у зернах на кубічний метр повітря (зерна/м³); чим вище — тим сильніша можлива реакція навіть у людей без вираженої чутливості.</p>
+  </div>`;
+  html += '<div class="info-cluster">';
+  POLLEN_TYPES.forEach(p => {
+    const val = a[p.key];
+    const lvl = levelFor(val, p.thresholds);
+    const hasData = lvl !== null;
+    const pct = hasData ? Math.min(100, (lvl/4)*100 + (lvl>0?12:0)) : 0;
+    let trendHtml = '';
+    if(p.featured && air.hourly && air.hourly.ragweed_pollen){
+      const vals = air.hourly.ragweed_pollen.slice(0, 48);
+      const spark = sparklineSVG(vals, 'var(--amber)');
+      if(spark){
+        trendHtml = `<div class="trend"><div class="trend-label">Тренд наступні 48 год</div>${spark}</div>`;
+      }
+    }
+    html += `<div class="info-card${p.featured?' featured':''}">
+      <div class="info-top">
+        <div class="info-name">${p.label}${p.featured?'<span class="tag">головний алерген в Україні</span>':''}</div>
+        <div class="info-value">${hasData ? `<span style="color:${LEVEL_COLOR[lvl]}" class="lvl">${LEVEL_LABEL[lvl]}</span> · ${val.toFixed(1)}` : 'немає даних'}</div>
+      </div>
+      ${gaugeBlock(hasData, lvl, pct)}
+      ${trendHtml}
+      ${p.photo ? `<img src="${p.photo}" alt="${p.label}" class="info-photo">` : ''}
+      <div class="info-desc">${p.desc}</div>
+      <div class="info-meta"><span>Сезон цвітіння: <b>${p.season}</b></span></div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // ---- Air quality ----
+  const eaqi = a.european_aqi;
+  const eLvl = eaqiLevel(eaqi);
+  html += `<div class="section-head">
+    <h2>Якість повітря та шкідливий пил</h2>
+    <p>Загальний індекс European AQI об'єднує основні забруднювачі в одну шкалу від 0 (чисте повітря) до 100+ (дуже шкідливе). Нижче — розбивка по кожному показнику з поясненням, чим він небезпечний.</p>
+  </div>`;
+  html += `<div class="info-card" style="margin-bottom:12px;">
+    <div class="info-top">
+      <div class="info-name">Загальний індекс (EAQI)</div>
+      <div class="info-value">${eaqi!=null ? `<span style="color:${LEVEL_COLOR[eLvl]}" class="lvl">${EAQI_LABEL[eLvl]}</span> · ${eaqi}` : 'немає даних'}</div>
+    </div>
+    <div class="gauge-track">${eaqi!=null?`<div class="gauge-marker" style="left:${Math.min(100,eaqi)}%"></div>`:''}</div>
+    <div class="gauge-scale"><span>0</span><span>20</span><span>40</span><span>60</span><span>80+</span></div>
+  </div>`;
+
+  html += '<div class="info-cluster">';
+  POLLUTANTS.forEach(p => {
+    const val = a[p.key];
+    const lvl = levelFor(val, p.thresholds);
+    const hasData = lvl !== null;
+    const pct = hasData ? Math.min(100, (lvl/4)*100 + (lvl>0?12:0)) : 0;
+    html += `<div class="info-card">
+      <div class="info-top">
+        <div class="info-name">${p.label}</div>
+        <div class="info-value">${hasData ? `<span style="color:${LEVEL_COLOR[lvl]}" class="lvl">${LEVEL_LABEL[lvl]}</span> · ${val.toFixed(1)} ${p.unit}` : 'немає даних'}</div>
+      </div>
+      ${gaugeBlock(hasData, lvl, pct)}
+      <div class="info-desc">${p.desc}</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // ---- Advice (dynamic, based on worst level found) ----
+  const allLevels = [...POLLEN_TYPES.map(p=>levelFor(a[p.key],p.thresholds)), ...POLLUTANTS.map(p=>levelFor(a[p.key],p.thresholds))].filter(l=>l!==null);
+  const worst = allLevels.length ? Math.max(...allLevels) : 0;
+  const advice = {
+    0:["Показники низькі — можна без обмежень проводити час на вулиці."],
+    1:["Показники низькі — можна без обмежень проводити час на вулиці."],
+    2:["Людям із чутливістю до алергенів варто стежити за самопочуттям.","Тримайте вікна зачиненими рано вранці, коли концентрація пилку найвища."],
+    3:["Обмежте тривале перебування на вулиці, особливо фізичні навантаження.","Приймайте душ і міняйте одяг після прогулянки — пилок осідає на волоссі й тканині.","Тримайте вікна зачиненими, провітрюйте ввечері або після дощу."],
+    4:["По можливості залишайтесь у приміщенні в години пікового цвітіння.","На вулиці варто використовувати сонцезахисні окуляри та маску.","Проконсультуйтесь з лікарем-алергологом щодо симптоматичного лікування, якщо самопочуття погіршується."]
+  };
+  html += `<div class="advice">
+    <h3>Рекомендації на сьогодні</h3>
+    <ul>${(advice[worst]||advice[0]).map(t=>`<li>${t}</li>`).join('')}</ul>
+  </div>`;
+
+  content.innerHTML = html;
+}
+
+// ---------- Init ----------
+updateNotifyBtn();
+renderChips();
+const remembered = loadLastCity();
+if(remembered && typeof remembered.lat === "number" && typeof remembered.lon === "number"){
+  document.getElementById('clearBtn').hidden = false;
+  selectCity(remembered);
+}else{
+  document.getElementById('content').innerHTML = '<div class="state-msg">Оберіть місто вище, щоб побачити погоду, рівень пилку й якість повітря.</div>';
+}
+
+if("serviceWorker" in navigator && location.protocol !== "file:"){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => { /* not on https/localhost — install prompt just won't be available */ });
+  });
+}
+</script>
+</body>
+</html>
